@@ -17,7 +17,7 @@
 #define MALLOCA(type) (type *)malloc(sizeof(type))
 #define MALLOCS(type, variable_name, count) type * variable_name = (type **)malloc(sizeof(type *) * count)
 #define MALLOCSA(type, count) (type **)malloc(sizeof(type *) * count)
-#define SCALE 2
+#define SCALE 1
 #define GAME_WIDTH 1280 / SCALE
 #define GAME_HEIGHT 720 / SCALE
 #define TIME_PER_TICK 16
@@ -110,18 +110,72 @@ void inputs_process(SDL_Context *context, HW_Game *game)
   while (SDL_PollEvent(context->event)) { inputs_process_keyboad(context, game); }
 }
 
-void label_draw(SDL_Context *context, char *text)
+void progress_bar_draw(SDL_Context *context, int x, int y)
 {
-  SDL_Color white = { 255, 255, 255 };
-  context->surface = TTF_RenderText_Solid(context->font, text, white);
-  context->texture = SDL_CreateTextureFromSurface(context->renderer, context->surface);
-
   int texture_width = 0;
   int texture_height = 0;
-  SDL_QueryTexture(context->texture, NULL, NULL, &texture_width, &texture_height);
-  SDL_Rect destination_rect = { 0, 0, texture_width / SCALE, texture_height / SCALE };
-  SDL_RenderCopy(context->renderer, context->texture, NULL, &destination_rect);
+
+  context->surface = IMG_Load("progress-bar.png");
+
+  context->texture = SDL_CreateTextureFromSurface(context->renderer,
+						  context->surface);
+
+  SDL_SetColorKey(context->surface,
+		  SDL_TRUE,
+		  SDL_MapRGB(context->surface->format, 0x00, 0x40, 0x80));
+
+  SDL_QueryTexture(context->texture,
+		   NULL,
+		   NULL,
+		   &texture_width,
+		   &texture_height);
+
+  SDL_Rect destination_rect = { x - (texture_width / SCALE) / 2,
+				y,
+				texture_width / SCALE,
+				texture_height / SCALE };
+
+  SDL_RenderCopy(context->renderer,
+		 context->texture,
+		 NULL,
+		 &destination_rect);
+
   SDL_FreeSurface(context->surface);
+
+  SDL_DestroyTexture(context->texture);
+}
+
+void label_draw(SDL_Context *context, char *text, int x, int y)
+{
+  SDL_Color white = { 255, 255, 255 };
+  int texture_width = 0;
+  int texture_height = 0;
+
+  context->surface = TTF_RenderText_Solid(context->font,
+					  text,
+					  white);
+
+  context->texture = SDL_CreateTextureFromSurface(context->renderer,
+						  context->surface);
+
+  SDL_QueryTexture(context->texture,
+		   NULL,
+		   NULL,
+		   &texture_width,
+		   &texture_height);
+
+  SDL_Rect destination_rect = { x - (texture_width / SCALE) / 2,
+				y,
+				texture_width / SCALE,
+				texture_height / SCALE };
+
+  SDL_RenderCopy(context->renderer,
+		 context->texture,
+		 NULL,
+		 &destination_rect);
+
+  SDL_FreeSurface(context->surface);
+
   SDL_DestroyTexture(context->texture);
 }
 
@@ -129,11 +183,7 @@ void handler(int sig)
 {
   void *array[10];
   size_t size;
-
-  // get void*'s for all entries on the stack
   size = backtrace(array, 10);
-
-  // print out all the frames to stderr
   fprintf(stderr, "Error: signal %d:\n", sig);
   backtrace_symbols_fd(array, size, STDERR_FILENO);
   exit(1);
@@ -148,10 +198,11 @@ int main(int argc, char *argv[])
   TTF_Init();
   SDL_Context * context = sdl_context_new();
   SDL_RenderSetScale(context->renderer, 1, 1);
-  SDL_SetRenderDrawColor(context->renderer, 0, 0, 0, 255);
+  SDL_SetRenderDrawColor(context->renderer, 255/2, 255/2, 255/2, 255);
 
   unsigned int accumulator = 0;
   unsigned int last = SDL_GetTicks();
+
 
   while (!game->buttons[B_EXIT]) {
     unsigned int ticks = SDL_GetTicks();
@@ -161,7 +212,8 @@ int main(int argc, char *argv[])
       SDL_RenderClear(context->renderer);
       accumulator -= TIME_PER_TICK;
       inputs_process(context, game);
-      label_draw(context, "hello world");
+      label_draw(context, "hello world", GAME_WIDTH / 2, 10);
+      progress_bar_draw(context, GAME_WIDTH / 2, 50);
       SDL_RenderPresent(context->renderer);
     }
   }
