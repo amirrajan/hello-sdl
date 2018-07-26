@@ -1,6 +1,11 @@
 // auto-build: fswatch ./*.h ./*.c | xargs -n1 -I{} sh ./build.sh
 //             fswatch ./.build-completed | xargs -n1 -I{} ./hello-sdl
 
+#include <mruby.h>
+#include <mruby/variable.h>
+#include <mruby/string.h>
+#include <mruby/irep.h>
+#include "main_ruby.c"
 #include <stdlib.h>
 #include <execinfo.h>
 #include <signal.h>
@@ -12,6 +17,7 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 #include <chipmunk.h>
+
 
 #define MALLOC(type, variable_name) type * variable_name = (type *)malloc(sizeof(type))
 #define MALLOCA(type) (type *)malloc(sizeof(type))
@@ -189,12 +195,43 @@ void handler(int sig)
   exit(1);
 }
 
+void ruby_load()
+{
+  mrb_state *mrb = mrb_open();
+
+  mrb_load_irep(mrb, main_ruby);
+
+  struct RClass *game_class = mrb_class_get(mrb, "Game");
+
+  mrb_value game =
+    mrb_funcall(mrb,
+		mrb_obj_value(game_class),
+		"new",
+		0);
+
+  mrb_value tick_result =
+    mrb_funcall(mrb,
+		game,
+		"tick",
+		0);
+
+  SDL_Log("oh god please work: %lli", mrb_fixnum(tick_result));
+
+  if (mrb->exc) {
+    mrb_value obj = mrb_funcall(mrb, mrb_obj_value(mrb->exc), "inspect", 0);
+    fwrite(RSTRING_PTR(obj), RSTRING_LEN(obj), 1, stdout);
+    SDL_Log("not worky");
+    putc('\n', stdout);
+  }
+}
+
 int main(int argc, char *argv[])
 {
   signal(SIGSEGV, handler);
   MALLOC(HW_Game, game);
   game_new(game);
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO);
+  ruby_load();
   TTF_Init();
   SDL_Context * context = sdl_context_new();
   SDL_RenderSetScale(context->renderer, 1, 1);

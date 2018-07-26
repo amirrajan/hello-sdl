@@ -10,3 +10,5 @@ Makefile
 *DS_Store*
 /TAGS
 /.build-completed
+/main_ruby.c
+/main_ruby.rb
