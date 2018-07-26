@@ -1,4 +1,7 @@
 #include <stdlib.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <unistd.h>
 #include <math.h>
 #include <SDL.h>
 #include <SDL_render.h>
@@ -103,8 +106,23 @@ void inputs_process(SDL_Context *context, HW_Game *game)
   while (SDL_PollEvent(context->event)) { inputs_process_keyboad(context, game); }
 }
 
+void handler(int sig)
+{
+  void *array[10];
+  size_t size;
+
+  // get void*'s for all entries on the stack
+  size = backtrace(array, 10);
+
+  // print out all the frames to stderr
+  fprintf(stderr, "Error: signal %d:\n", sig);
+  backtrace_symbols_fd(array, size, STDERR_FILENO);
+  exit(1);
+}
+
 int main(int argc, char *argv[])
 {
+  signal(SIGSEGV, handler);
   MALLOC(HW_Game, game);
   game_new(game);
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO);

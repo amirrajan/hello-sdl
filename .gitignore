@@ -9,3 +9,4 @@ Makefile
 /COPYONLY
 *DS_Store*
 /TAGS
+/.build-completed
