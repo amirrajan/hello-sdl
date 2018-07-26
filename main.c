@@ -1,3 +1,6 @@
+// auto-build: fswatch ./*.h ./*.c | xargs -n1 -I{} sh ./build.sh
+//             fswatch ./.build-completed | xargs -n1 -I{} ./hello-sdl
+
 #include <stdlib.h>
 #include <execinfo.h>
 #include <signal.h>
@@ -14,8 +17,9 @@
 #define MALLOCA(type) (type *)malloc(sizeof(type))
 #define MALLOCS(type, variable_name, count) type * variable_name = (type **)malloc(sizeof(type *) * count)
 #define MALLOCSA(type, count) (type **)malloc(sizeof(type *) * count)
-#define GAME_WIDTH 1280
-#define GAME_HEIGHT 720
+#define SCALE 2
+#define GAME_WIDTH 1280 / SCALE
+#define GAME_HEIGHT 720 / SCALE
 #define TIME_PER_TICK 16
 
 typedef struct {
@@ -106,6 +110,21 @@ void inputs_process(SDL_Context *context, HW_Game *game)
   while (SDL_PollEvent(context->event)) { inputs_process_keyboad(context, game); }
 }
 
+void label_draw(SDL_Context *context, char *text)
+{
+  SDL_Color white = { 255, 255, 255 };
+  context->surface = TTF_RenderText_Solid(context->font, text, white);
+  context->texture = SDL_CreateTextureFromSurface(context->renderer, context->surface);
+
+  int texture_width = 0;
+  int texture_height = 0;
+  SDL_QueryTexture(context->texture, NULL, NULL, &texture_width, &texture_height);
+  SDL_Rect destination_rect = { 0, 0, texture_width / SCALE, texture_height / SCALE };
+  SDL_RenderCopy(context->renderer, context->texture, NULL, &destination_rect);
+  SDL_FreeSurface(context->surface);
+  SDL_DestroyTexture(context->texture);
+}
+
 void handler(int sig)
 {
   void *array[10];
@@ -130,34 +149,25 @@ int main(int argc, char *argv[])
   SDL_Context * context = sdl_context_new();
   SDL_RenderSetScale(context->renderer, 1, 1);
   SDL_SetRenderDrawColor(context->renderer, 0, 0, 0, 255);
+
   unsigned int accumulator = 0;
   unsigned int last = SDL_GetTicks();
-
-  bool end_game = false;
-
-  SDL_Color color = { 255, 255, 255 };
-  context->surface = TTF_RenderText_Solid(context->font,
-					  "Welcome to Programmer's Ranch", color);
-  context->texture = SDL_CreateTextureFromSurface(context->renderer,
-						  context->surface);
-
-  int texture_width = 0;
-  int texture_height = 0;
-  SDL_QueryTexture(context->texture, NULL, NULL, &texture_width, &texture_height);
-  SDL_Rect destination_rect = { 0, 0, texture_width, texture_height };
 
   while (!game->buttons[B_EXIT]) {
     unsigned int ticks = SDL_GetTicks();
     accumulator += ticks - last;
     last = ticks;
     if (accumulator > TIME_PER_TICK) {
+      SDL_RenderClear(context->renderer);
       accumulator -= TIME_PER_TICK;
       inputs_process(context, game);
-      SDL_RenderClear(context->renderer);
-      SDL_RenderCopy(context->renderer, context->texture, NULL, &destination_rect);
+      label_draw(context, "hello world");
       SDL_RenderPresent(context->renderer);
     }
   }
+
+  TTF_Quit();
+  SDL_Quit();
 
   return 0;
 }
