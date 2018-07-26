@@ -4,6 +4,7 @@
 #include <SDL_render.h>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
+#include <SDL_ttf.h>
 #include <chipmunk.h>
 
 #define MALLOC(type, variable_name) type * variable_name = (type *)malloc(sizeof(type))
@@ -18,10 +19,13 @@ typedef struct {
   SDL_Window * window;
   SDL_Renderer * renderer;
   SDL_Texture * resizeTarget;
+  SDL_Texture * texture;
   SDL_Surface * surface;
   SDL_Event * event;
   SDL_Joystick * joystick;
+  TTF_Font * font;
 } SDL_Context;
+
 
 typedef enum {
   BS_NONE,
@@ -39,7 +43,8 @@ typedef struct {
   buttonstate buttons[NUMBEROFBUTTONS];
 } HW_Game;
 
-int game_new(HW_Game * game) {
+int game_new(HW_Game * game)
+{
   for (int i = 0; i < NUMBEROFBUTTONS; i++) { game->buttons[i] = BS_NONE; }
 
   return 0;
@@ -54,13 +59,21 @@ SDL_Context * sdl_context_new()
 			       GAME_WIDTH, GAME_HEIGHT,
 			       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
-  o->renderer = SDL_CreateRenderer(o->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  SDL_SetWindowPosition(o->window, 675, 375);
+
+  o->renderer = SDL_CreateRenderer(o->window, -1,
+				   SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
   o->resizeTarget = SDL_CreateTexture(o->renderer,
 				      SDL_PIXELFORMAT_RGBA8888,
 				      SDL_TEXTUREACCESS_TARGET,
 				      GAME_WIDTH, GAME_HEIGHT);
+
   o->surface = MALLOCA(SDL_Surface);
+
   o->event = MALLOCA(SDL_Event);
+
+  o->font = TTF_OpenFont("font.ttf", 25);
 
   if (SDL_NumJoysticks() > 0) { o->joystick = SDL_JoystickOpen(0); }
 
@@ -70,8 +83,11 @@ SDL_Context * sdl_context_new()
 void inputs_process_keyboad(SDL_Context *context, HW_Game *game)
 {
   int type = context->event->type;
+
   if (type == SDL_KEYDOWN && context->event->key.repeat == 0) {
+
   } else if (type == SDL_KEYUP && context->event->key.repeat == 0) {
+
   } else if (type == SDL_QUIT) {
     game->buttons[B_EXIT] = BS_PRESS;
   }
@@ -79,17 +95,12 @@ void inputs_process_keyboad(SDL_Context *context, HW_Game *game)
 
 void inputs_process(SDL_Context *context, HW_Game *game)
 {
-  for (int i = 0; i < NUMBEROFBUTTONS; i++)
-  {
-    if (game->buttons[i] == BS_PRESS)
-      game->buttons[i] = BS_HOLD;
-    if (game->buttons[i] == BS_RELEASE)
-      game->buttons[i] = BS_NONE;
+  for (int i = 0; i < NUMBEROFBUTTONS; i++) {
+    if (game->buttons[i] == BS_PRESS)   { game->buttons[i] = BS_HOLD; }
+    if (game->buttons[i] == BS_RELEASE) { game->buttons[i] = BS_NONE; }
   }
 
-  while (SDL_PollEvent(context->event)) {
-    inputs_process_keyboad(context, game);
-  }
+  while (SDL_PollEvent(context->event)) { inputs_process_keyboad(context, game); }
 }
 
 int main(int argc, char *argv[])
@@ -97,6 +108,7 @@ int main(int argc, char *argv[])
   MALLOC(HW_Game, game);
   game_new(game);
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO);
+  TTF_Init();
   SDL_Context * context = sdl_context_new();
   SDL_RenderSetScale(context->renderer, 1, 1);
   SDL_SetRenderDrawColor(context->renderer, 0, 0, 0, 255);
@@ -105,6 +117,17 @@ int main(int argc, char *argv[])
 
   bool end_game = false;
 
+  SDL_Color color = { 255, 255, 255 };
+  context->surface = TTF_RenderText_Solid(context->font,
+					  "Welcome to Programmer's Ranch", color);
+  context->texture = SDL_CreateTextureFromSurface(context->renderer,
+						  context->surface);
+
+  int texture_width = 0;
+  int texture_height = 0;
+  SDL_QueryTexture(context->texture, NULL, NULL, &texture_width, &texture_height);
+  SDL_Rect destination_rect = { 0, 0, texture_width, texture_height };
+
   while (!game->buttons[B_EXIT]) {
     unsigned int ticks = SDL_GetTicks();
     accumulator += ticks - last;
@@ -112,15 +135,8 @@ int main(int argc, char *argv[])
     if (accumulator > TIME_PER_TICK) {
       accumulator -= TIME_PER_TICK;
       inputs_process(context, game);
-      SDL_SetRenderTarget(context->renderer, context->resizeTarget);
       SDL_RenderClear(context->renderer);
-      SDL_SetRenderTarget(context->renderer, NULL);
-      SDL_RenderClear(context->renderer);
-      SDL_Rect destrect;
-      SDL_RenderGetViewport(context->renderer, &destrect);
-      destrect.x = 0;
-      destrect.y = 0;
-      SDL_RenderCopyEx(context->renderer, context->resizeTarget, NULL, &destrect, 0, NULL, SDL_FLIP_NONE);
+      SDL_RenderCopy(context->renderer, context->texture, NULL, &destination_rect);
       SDL_RenderPresent(context->renderer);
     }
   }
