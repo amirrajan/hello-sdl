@@ -9,6 +9,11 @@ brew install freetype
 
 pkill hello-sdl
 
+pushd mruby
+make clean
+make
+popd
+
 pushd SDL
 ./configure
 make clean
