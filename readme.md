@@ -4,12 +4,10 @@ Clone the repo.
 
 ## On Mac
 
-```
-brew install flac
-brew install libmikmod
-brew install libogg
-brew install libvorbis
-brew install smpeg
-```
+1. `sh ./install-dependencies.sh` (you only have to run this once)
+2. `sh ./build.sh`
+3. `./hello-sdl`
 
-Run `sh ./build.sh` and pray (you will be prompted for sudo access when installing the libraries).
+## On Windows
+
+No idea. Pull requests welcome.
