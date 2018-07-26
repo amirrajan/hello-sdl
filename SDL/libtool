@@ -167,7 +167,7 @@ lock_old_archive_extraction=yes
 LTCC="gcc"
 
 # LTCC compiler flags.
-LTCFLAGS="-g -O2 -Iinclude -I/Users/amiralirajan/projects/broad-sword-of-justice/SDL/include -idirafter /Users/amiralirajan/projects/broad-sword-of-justice/SDL/src/video/khronos "
+LTCFLAGS="-g -O2 -Iinclude -I/Users/amiralirajan/projects/hello-sdl/SDL/include -idirafter /Users/amiralirajan/projects/hello-sdl/SDL/src/video/khronos "
 
 # Take the output of nm and produce a listing of raw symbols and C names.
 global_symbol_pipe="sed -n -e 's/^.*[	 ]\\([BCDEGRST][BCDEGRST]*\\)[	 ][	 ]*_\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 _\\2 \\2/p' | sed '/ __gnu_lto/d'"
