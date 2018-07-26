@@ -1,5 +1,4 @@
-pkill hello-sdl
-
+brew install pkill
 brew install flac
 brew install libmikmod
 brew install libogg
@@ -7,6 +6,8 @@ brew install libvorbis
 brew install smpeg
 brew install smpeg
 brew install freetype
+
+pkill hello-sdl
 
 pushd SDL
 ./configure

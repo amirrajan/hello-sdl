@@ -1,5 +1,7 @@
 pkill hello-sdl
 
+echo "build started."
+
 clang *.c -I./ \
       -I./SDL/include \
       -I./SDL_image \
@@ -9,3 +11,5 @@ clang *.c -I./ \
       -o ./hello-sdl -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
 
 echo "lit."
+
+touch ./.build-completed
