@@ -6,7 +6,6 @@
 #include <mruby/array.h>
 #include <mruby/string.h>
 #include <mruby/irep.h>
-#include "main_ruby.c"
 #include <stdlib.h>
 #include <execinfo.h>
 #include <signal.h>
@@ -19,50 +18,15 @@
 #include <SDL_ttf.h>
 #include <chipmunk.h>
 
-#define DEVMODE 1
+#include "main_ruby.c"
+#include "malloc_macros.h"
+#include "mrb_macros.h"
+#include "sdl_macros.h"
 
-#define CHECK_FOR_EXCEPTION(runtime)\
-  do {\
-    if (runtime->exc) {\
-      mrb_value exception = mrb_funcall(runtime,\
-					mrb_obj_value(runtime->exc),\
-					"inspect",\
-					0);\
-      SDL_Log("%s", RSTRING_PTR(exception));\
-      exit(-1);\
-    }\
-  } while (0);
 
-#ifndef DEVMODE
-
-#define SEND(name, value, method, runtime) mrb_value name = mrb_funcall(runtime, value, #method, 0);
-#define SEND_1(name, value, method, arg_one, runtime) mrb_value name = mrb_funcall(runtime, value, #method, 1, arg_one);
-#define SEND_2(name, value, method, arg_one, arg_two, runtime) mrb_value name = mrb_funcall(runtime, value, #method, 2, arg_one, arg_two);
-
-#else
-
-#define SEND(name, value, method, runtime)\
-  mrb_value name = mrb_funcall(runtime, value, #method, 0);\
-  CHECK_FOR_EXCEPTION(runtime);
-
-#define SEND_1(name, value, method, arg_one, runtime)\
-  mrb_value name = mrb_funcall(runtime, value, #method, 1, arg_one);\
-  CHECK_FOR_EXCEPTION((runtime);
-
-#define SEND_2(name, value, method, arg_one, arg_two, runtime)\
-  mrb_value name = mrb_funcall(runtime, value, #method, 2, arg_one, arg_two); \
-  CHECK_FOR_EXCEPTION(runtime);
-
-#endif
-
-#define MALLOC(type, variable_name) type * variable_name = (type *)malloc(sizeof(type))
-#define MALLOCA(type) (type *)malloc(sizeof(type))
-#define MALLOCS(type, variable_name, count) type * variable_name = (type **)malloc(sizeof(type *) * count)
-#define MALLOCSA(type, count) (type **)malloc(sizeof(type *) * count)
-
-#define SCALE 1
-#define GAME_WIDTH 1280 / SCALE
-#define GAME_HEIGHT 720 / SCALE
+#define SCALE 0.5
+#define GAME_WIDTH 1280
+#define GAME_HEIGHT 720
 #define TIME_PER_TICK 16
 
 typedef struct {
@@ -136,7 +100,7 @@ SDL_Context * sdl_context_new()
 
   o->window = SDL_CreateWindow("Hello SDL",
 			       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			       GAME_WIDTH, GAME_HEIGHT,
+			       GAME_WIDTH * SCALE, GAME_HEIGHT * SCALE,
 			       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
   SDL_SetWindowPosition(o->window, 675, 375);
@@ -153,9 +117,11 @@ SDL_Context * sdl_context_new()
 
   o->event = MALLOCA(SDL_Event);
 
-  o->font = TTF_OpenFont("font.ttf", 25);
+  o->font = TTF_OpenFont("font.ttf", 20);
 
   if (SDL_NumJoysticks() > 0) { o->joystick = SDL_JoystickOpen(0); }
+
+  SDL_RenderSetScale(o->renderer, SCALE, SCALE);
 
   return o;
 }
@@ -203,10 +169,10 @@ void progress_bar_draw(SDL_Context *context, int x, int y)
 		   &texture_width,
 		   &texture_height);
 
-  SDL_Rect destination_rect = { x - (texture_width / SCALE) / 2,
+  SDL_Rect destination_rect = { x - (texture_width) / 2,
 				y,
-				texture_width / SCALE,
-				texture_height / SCALE };
+				texture_width,
+				texture_height };
 
   SDL_RenderCopy(context->renderer,
 		 context->texture,
@@ -237,10 +203,10 @@ void label_draw(SDL_Context *context, char *text, long long x, long long y)
 		   &texture_width,
 		   &texture_height);
 
-  SDL_Rect destination_rect = { x - (texture_width / SCALE) / 2,
+  SDL_Rect destination_rect = { x - (texture_width) / 2,
 				y,
-				texture_width / SCALE,
-				texture_height / SCALE };
+				texture_width,
+				texture_height };
 
   SDL_RenderCopy(context->renderer,
 		 context->texture,
@@ -280,7 +246,6 @@ int main(int argc, char *argv[])
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO);
   TTF_Init();
   SDL_Context * context = sdl_context_new();
-  SDL_RenderSetScale(context->renderer, 1, 1);
   SDL_SetRenderDrawColor(context->renderer, 255, 255, 255, 255);
 
   unsigned int accumulator = 0;
