@@ -58,9 +58,9 @@ typedef struct {
   mrb_state *mrb;
   mrb_value adr;
   mrb_value layout;
-} HW_Game;
+} ADR_Game;
 
-int game_new(HW_Game * game)
+int game_new(ADR_Game * game)
 {
   for (int i = 0; i < NUMBEROFBUTTONS; i++) { game->buttons[i] = BS_NONE; }
 
@@ -124,7 +124,7 @@ SDL_Context * sdl_context_new()
   return o;
 }
 
-void inputs_process_keyboad(SDL_Context *context, HW_Game *game)
+void inputs_process_keyboad(SDL_Context *context, ADR_Game *game)
 {
   int type = context->event->type;
 
@@ -137,7 +137,7 @@ void inputs_process_keyboad(SDL_Context *context, HW_Game *game)
   }
 }
 
-void inputs_process(SDL_Context *context, HW_Game *game)
+void inputs_process(SDL_Context *context, ADR_Game *game)
 {
   for (int i = 0; i < NUMBEROFBUTTONS; i++) {
     if (game->buttons[i] == BS_PRESS)   { game->buttons[i] = BS_HOLD; }
@@ -226,7 +226,7 @@ void handler(int sig)
   exit(1);
 }
 
-void room_draw(SDL_Context * context, HW_Game * game)
+void room_draw(SDL_Context * context, ADR_Game * game)
 {
   mrb_value point = mrb_funcall(game->mrb,
 				game->layout,
@@ -249,7 +249,7 @@ void room_draw(SDL_Context * context, HW_Game * game)
 int main(int argc, char *argv[])
 {
   signal(SIGSEGV, handler);
-  MALLOC(HW_Game, game);
+  MALLOC(ADR_Game, game);
   game_new(game);
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO);
   TTF_Init();
