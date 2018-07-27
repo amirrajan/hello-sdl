@@ -24,9 +24,9 @@
 #include "sdl_macros.h"
 
 
-#define SCALE 0.5
-#define GAME_WIDTH 1280
-#define GAME_HEIGHT 720
+#define SCALE 1
+#define GAME_WIDTH 1280 // 2 * 2 * 2 * 2 * 5 * 2 * 2 * 2 * 2
+#define GAME_HEIGHT 720 // 2 * 2 * 2 * 2 * 5 * 3 * 3
 #define TIME_PER_TICK 16
 
 typedef struct {
@@ -38,6 +38,7 @@ typedef struct {
   SDL_Event * event;
   SDL_Joystick * joystick;
   TTF_Font * font;
+  TTF_Font * font_sm;
 } SDL_Context;
 
 
@@ -117,7 +118,9 @@ SDL_Context * sdl_context_new()
 
   o->event = MALLOCA(SDL_Event);
 
-  o->font = TTF_OpenFont("font.ttf", 20);
+  o->font = TTF_OpenFont("font.ttf", 18);
+
+  o->font_sm = TTF_OpenFont("font.ttf", 12);
 
   if (SDL_NumJoysticks() > 0) { o->joystick = SDL_JoystickOpen(0); }
 
@@ -184,9 +187,43 @@ void progress_bar_draw(SDL_Context *context, int x, int y)
   SDL_DestroyTexture(context->texture);
 }
 
+void label_sm_draw(SDL_Context *context, char *text, long long x, long long y)
+{
+  SDL_Color white = { 255, 255, 255 };
+  int texture_width = 0;
+  int texture_height = 0;
+
+  context->surface = TTF_RenderText_Solid(context->font_sm,
+					  text,
+					  white);
+
+  context->texture = SDL_CreateTextureFromSurface(context->renderer,
+						  context->surface);
+
+  SDL_QueryTexture(context->texture,
+		   NULL,
+		   NULL,
+		   &texture_width,
+		   &texture_height);
+
+  SDL_Rect destination_rect = { x,
+				y,
+				texture_width,
+				texture_height };
+
+  SDL_RenderCopy(context->renderer,
+		 context->texture,
+		 NULL,
+		 &destination_rect);
+
+  SDL_FreeSurface(context->surface);
+
+  SDL_DestroyTexture(context->texture);
+}
+
 void label_draw(SDL_Context *context, char *text, long long x, long long y)
 {
-  SDL_Color white = { 0, 0, 0 };
+  SDL_Color white = { 255, 255, 255 };
   int texture_width = 0;
   int texture_height = 0;
 
@@ -203,8 +240,8 @@ void label_draw(SDL_Context *context, char *text, long long x, long long y)
 		   &texture_width,
 		   &texture_height);
 
-  SDL_Rect destination_rect = { x - (texture_width) / 2,
-				y,
+  SDL_Rect destination_rect = { x - (texture_width / 2),
+				y - texture_height,
 				texture_width,
 				texture_height };
 
@@ -228,14 +265,54 @@ void handler(int sig)
   exit(1);
 }
 
+void border(SDL_Context *context, int x, int y, int width, int height)
+{
+  SDL_Rect b = { x, y, width, height };
+  SDL_SetRenderDrawColor(context->renderer, 255, 255, 255, 255);
+  SDL_RenderDrawRect(context->renderer, &b);
+
+  SDL_Rect b2 = { x + 1, y + 1, width - 2, height - 2 };
+  SDL_SetRenderDrawColor(context->renderer, 255, 255, 255, 255);
+  SDL_RenderDrawRect(context->renderer, &b2);
+
+  /* SDL_Rect b3 = { x + 2, y + 2, width - 4, height - 4 }; */
+  /* SDL_SetRenderDrawColor(context->renderer, 255, 255, 255, 255); */
+  /* SDL_RenderDrawRect(context->renderer, &b3); */
+}
+
 void room_draw(SDL_Context * context, ADR_Game * game)
 {
   SEND(point, game->layout, title_location, game->mrb);
+  long long t_x = mrb_fixnum(mrb_ary_entry(point, 0));
+  long long t_y = mrb_fixnum(mrb_ary_entry(point, 1));
+  label_draw(context, "a dark room", t_x, t_y);
 
-  long long x = mrb_fixnum(mrb_ary_entry(point, 0));
-  long long y = mrb_fixnum(mrb_ary_entry(point, 1));
+  label_sm_draw(context, "awake. head throbbing.", 60, 60);
+  label_sm_draw(context, "vision blurry. the", 60, 80);
+  label_sm_draw(context, "voices say to survive.", 60, 100);
 
-  label_draw(context, "a dark room", x, y);
+  long long h_x, h_y, h_w, h_h = 0;
+
+  SEND(history_border, game->layout, column_1_frame, game->mrb);
+  h_x = mrb_fixnum(mrb_ary_entry(history_border, 0));
+  h_y = mrb_fixnum(mrb_ary_entry(history_border, 1));
+  h_w = mrb_fixnum(mrb_ary_entry(history_border, 2));
+  h_h = mrb_fixnum(mrb_ary_entry(history_border, 3));
+  border(context, h_x, h_y, h_w, h_h);
+
+  /* SEND(room_border, game->layout, column_2_frame, game->mrb); */
+  /* h_x = mrb_fixnum(mrb_ary_entry(room_border, 0)); */
+  /* h_y = mrb_fixnum(mrb_ary_entry(room_border, 1)); */
+  /* h_w = mrb_fixnum(mrb_ary_entry(room_border, 2)); */
+  /* h_h = mrb_fixnum(mrb_ary_entry(room_border, 3)); */
+  /* border(context, h_x, h_y, h_w, h_h); */
+
+  SEND(supply_border, game->layout, column_3_frame, game->mrb);
+  h_x = mrb_fixnum(mrb_ary_entry(supply_border, 0));
+  h_y = mrb_fixnum(mrb_ary_entry(supply_border, 1));
+  h_w = mrb_fixnum(mrb_ary_entry(supply_border, 2));
+  h_h = mrb_fixnum(mrb_ary_entry(supply_border, 3));
+  border(context, h_x, h_y, h_w, h_h);
 }
 
 int main(int argc, char *argv[])
@@ -246,7 +323,6 @@ int main(int argc, char *argv[])
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO);
   TTF_Init();
   SDL_Context * context = sdl_context_new();
-  SDL_SetRenderDrawColor(context->renderer, 255, 255, 255, 255);
 
   unsigned int accumulator = 0;
   unsigned int last = SDL_GetTicks();
@@ -256,6 +332,7 @@ int main(int argc, char *argv[])
     accumulator += ticks - last;
     last = ticks;
     if (accumulator > TIME_PER_TICK) {
+      SDL_SetRenderDrawColor(context->renderer, 0, 0, 0, 255);
       SDL_RenderClear(context->renderer);
       accumulator -= TIME_PER_TICK;
       inputs_process(context, game);
