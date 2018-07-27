@@ -19,11 +19,47 @@
 #include <SDL_ttf.h>
 #include <chipmunk.h>
 
+#define DEVMODE 1
+
+#define CHECK_FOR_EXCEPTION(runtime)\
+  do {\
+    if (runtime->exc) {\
+      mrb_value exception = mrb_funcall(runtime,\
+					mrb_obj_value(runtime->exc),\
+					"inspect",\
+					0);\
+      SDL_Log("%s", RSTRING_PTR(exception));\
+      exit(-1);\
+    }\
+  } while (0);
+
+#ifndef DEVMODE
+
+#define SEND(name, value, method, runtime) mrb_value name = mrb_funcall(runtime, value, #method, 0);
+#define SEND_1(name, value, method, arg_one, runtime) mrb_value name = mrb_funcall(runtime, value, #method, 1, arg_one);
+#define SEND_2(name, value, method, arg_one, arg_two, runtime) mrb_value name = mrb_funcall(runtime, value, #method, 2, arg_one, arg_two);
+
+#else
+
+#define SEND(name, value, method, runtime)\
+  mrb_value name = mrb_funcall(runtime, value, #method, 0);\
+  CHECK_FOR_EXCEPTION(runtime);
+
+#define SEND_1(name, value, method, arg_one, runtime)\
+  mrb_value name = mrb_funcall(runtime, value, #method, 1, arg_one);\
+  CHECK_FOR_EXCEPTION((runtime);
+
+#define SEND_2(name, value, method, arg_one, arg_two, runtime)\
+  mrb_value name = mrb_funcall(runtime, value, #method, 2, arg_one, arg_two); \
+  CHECK_FOR_EXCEPTION(runtime);
+
+#endif
 
 #define MALLOC(type, variable_name) type * variable_name = (type *)malloc(sizeof(type))
 #define MALLOCA(type) (type *)malloc(sizeof(type))
 #define MALLOCS(type, variable_name, count) type * variable_name = (type **)malloc(sizeof(type *) * count)
 #define MALLOCSA(type, count) (type **)malloc(sizeof(type *) * count)
+
 #define SCALE 1
 #define GAME_WIDTH 1280 / SCALE
 #define GAME_HEIGHT 720 / SCALE
@@ -87,8 +123,8 @@ int game_new(ADR_Game * game)
   if (game->mrb->exc) {
     mrb_value obj = mrb_funcall(game->mrb, mrb_obj_value(game->mrb->exc), "inspect", 0);
     fwrite(RSTRING_PTR(obj), RSTRING_LEN(obj), 1, stdout);
-    SDL_Log("not worky");
     putc('\n', stdout);
+    exit(-1);
   }
 
   return 0;
@@ -228,17 +264,7 @@ void handler(int sig)
 
 void room_draw(SDL_Context * context, ADR_Game * game)
 {
-  mrb_value point = mrb_funcall(game->mrb,
-				game->layout,
-				"title_location",
-				0);
-
-  if (game->mrb->exc) {
-    mrb_value obj = mrb_funcall(game->mrb, mrb_obj_value(game->mrb->exc), "inspect", 0);
-    fwrite(RSTRING_PTR(obj), RSTRING_LEN(obj), 1, stdout);
-    SDL_Log("not worky");
-    putc('\n', stdout);
-  }
+  SEND(point, game->layout, title_location, game->mrb);
 
   long long x = mrb_fixnum(mrb_ary_entry(point, 0));
   long long y = mrb_fixnum(mrb_ary_entry(point, 1));
