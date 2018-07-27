@@ -1,8 +1,9 @@
-// auto-build: fswatch ./*.h ./*.c | xargs -n1 -I{} sh ./build.sh
+// auto-build: fswatch main.c | xargs -n1 -I{} sh ./build.sh
 //             fswatch ./.build-completed | xargs -n1 -I{} ./hello-sdl
 
 #include <mruby.h>
 #include <mruby/variable.h>
+#include <mruby/array.h>
 #include <mruby/string.h>
 #include <mruby/irep.h>
 #include "main_ruby.c"
@@ -54,11 +55,41 @@ typedef enum {
 
 typedef struct {
   buttonstate buttons[NUMBEROFBUTTONS];
+  mrb_state *mrb;
+  mrb_value adr;
+  mrb_value layout;
 } HW_Game;
 
 int game_new(HW_Game * game)
 {
   for (int i = 0; i < NUMBEROFBUTTONS; i++) { game->buttons[i] = BS_NONE; }
+
+  game->mrb = mrb_open();
+
+  mrb_load_irep(game->mrb, main_ruby);
+
+  struct RClass *game_class = mrb_class_get(game->mrb, "Game");
+  game->adr =
+    mrb_funcall(game->mrb,
+		mrb_obj_value(game_class),
+		"new",
+		0);
+
+  struct RClass *layout_class = mrb_class_get(game->mrb, "Layout");
+  game->layout =
+    mrb_funcall(game->mrb,
+		mrb_obj_value(layout_class),
+		"new",
+		2,
+		mrb_fixnum_value(GAME_WIDTH),
+		mrb_fixnum_value(GAME_HEIGHT));
+
+  if (game->mrb->exc) {
+    mrb_value obj = mrb_funcall(game->mrb, mrb_obj_value(game->mrb->exc), "inspect", 0);
+    fwrite(RSTRING_PTR(obj), RSTRING_LEN(obj), 1, stdout);
+    SDL_Log("not worky");
+    putc('\n', stdout);
+  }
 
   return 0;
 }
@@ -151,9 +182,9 @@ void progress_bar_draw(SDL_Context *context, int x, int y)
   SDL_DestroyTexture(context->texture);
 }
 
-void label_draw(SDL_Context *context, char *text, int x, int y)
+void label_draw(SDL_Context *context, char *text, long long x, long long y)
 {
-  SDL_Color white = { 255, 255, 255 };
+  SDL_Color white = { 0, 0, 0 };
   int texture_width = 0;
   int texture_height = 0;
 
@@ -195,34 +226,24 @@ void handler(int sig)
   exit(1);
 }
 
-void ruby_load()
+void room_draw(SDL_Context * context, HW_Game * game)
 {
-  mrb_state *mrb = mrb_open();
+  mrb_value point = mrb_funcall(game->mrb,
+				game->layout,
+				"title_location",
+				0);
 
-  mrb_load_irep(mrb, main_ruby);
-
-  struct RClass *game_class = mrb_class_get(mrb, "Game");
-
-  mrb_value game =
-    mrb_funcall(mrb,
-		mrb_obj_value(game_class),
-		"new",
-		0);
-
-  mrb_value tick_result =
-    mrb_funcall(mrb,
-		game,
-		"tick",
-		0);
-
-  SDL_Log("oh god please work: %lli", mrb_fixnum(tick_result));
-
-  if (mrb->exc) {
-    mrb_value obj = mrb_funcall(mrb, mrb_obj_value(mrb->exc), "inspect", 0);
+  if (game->mrb->exc) {
+    mrb_value obj = mrb_funcall(game->mrb, mrb_obj_value(game->mrb->exc), "inspect", 0);
     fwrite(RSTRING_PTR(obj), RSTRING_LEN(obj), 1, stdout);
     SDL_Log("not worky");
     putc('\n', stdout);
   }
+
+  long long x = mrb_fixnum(mrb_ary_entry(point, 0));
+  long long y = mrb_fixnum(mrb_ary_entry(point, 1));
+
+  label_draw(context, "a dark room", x, y);
 }
 
 int main(int argc, char *argv[])
@@ -231,15 +252,13 @@ int main(int argc, char *argv[])
   MALLOC(HW_Game, game);
   game_new(game);
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO);
-  ruby_load();
   TTF_Init();
   SDL_Context * context = sdl_context_new();
   SDL_RenderSetScale(context->renderer, 1, 1);
-  SDL_SetRenderDrawColor(context->renderer, 255/2, 255/2, 255/2, 255);
+  SDL_SetRenderDrawColor(context->renderer, 255, 255, 255, 255);
 
   unsigned int accumulator = 0;
   unsigned int last = SDL_GetTicks();
-
 
   while (!game->buttons[B_EXIT]) {
     unsigned int ticks = SDL_GetTicks();
@@ -249,8 +268,8 @@ int main(int argc, char *argv[])
       SDL_RenderClear(context->renderer);
       accumulator -= TIME_PER_TICK;
       inputs_process(context, game);
-      label_draw(context, "hello world", GAME_WIDTH / 2, 10);
-      progress_bar_draw(context, GAME_WIDTH / 2, 50);
+      room_draw(context, game);
+      /* progress_bar_draw(context, GAME_WIDTH / 2, 50); */
       SDL_RenderPresent(context->renderer);
     }
   }
