@@ -5,7 +5,7 @@ echo "build started."
 cat ./app/* > ./main_ruby.rb
 ../mruby/bin/mrbc -Bmain_ruby ./main_ruby.rb
 
-clang main.c -I./ \
+clang adr_game.c sdl_context.c draw.c main.c -I./ \
       -I../mruby/include \
       -I./SDL/include \
       -I./SDL_image \
