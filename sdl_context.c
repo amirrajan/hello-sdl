@@ -7,16 +7,20 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
+#define GAME_WIDTH 1280 // 2 * 2 * 2 * 2 * 5 * 2 * 2 * 2 * 2
+#define GAME_HEIGHT 720 // 2 * 2 * 2 * 2 * 5 * 3 * 3
+
 SDL_Context * sdl_context_new()
 {
   MALLOC(SDL_Context, o);
 
   o->window = SDL_CreateWindow("Hello SDL",
 			       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			       GAME_WIDTH * SCALE, GAME_HEIGHT * SCALE,
+			       1280, 740,
 			       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
-  SDL_SetWindowPosition(o->window, 675, 375);
+  SDL_SetWindowPosition(o->window, 1750, 750);
+  SDL_SetWindowSize(o->window, 1280, 720);
 
   o->renderer = SDL_CreateRenderer(o->window, -1,
 				   SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
