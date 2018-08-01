@@ -7,6 +7,18 @@
 #include "sdl_context.h"
 #include "draw.h"
 
+void draw_progress_bar(SDL_Context *context,
+		       long long x,
+		       long long y,
+		       long long width,
+		       long long height,
+		       float percentage) {
+  draw_border(context, x, y, width, height);
+  SDL_Rect b = { x + 2, y + 2, (width - 4) * percentage, (height - 4) };
+  SDL_SetRenderDrawColor(context->renderer, 100, 180, 255, 255);
+  SDL_RenderFillRect(context->renderer, &b);
+}
+
 void draw_label(SDL_Context *context, char *text, long long x, long long y)
 {
   SDL_Color white = { 255, 255, 255 };
@@ -128,6 +140,8 @@ void draw_room(SDL_Context * context, ADR_Game * game)
   draw_title(context, game);
   draw_history(context, game);
   draw_supplies(context, game);
+  draw_label_sm(context, "light fire", 380, 60);
+  draw_progress_bar(context, 380, 80, 520, 20, 0.5);
 }
 
 void draw_border(SDL_Context *context, int x, int y, int width, int height)
