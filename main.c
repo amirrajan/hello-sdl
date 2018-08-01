@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
       SDL_RenderClear(context->renderer);
       accumulator -= TIME_PER_TICK;
       inputs_process(context, game);
-      room_draw(context, game);
       /* progress_bar_draw(context, GAME_WIDTH / 2, 50); */
+      draw_room(context, game);
       SDL_RenderPresent(context->renderer);
     }
   }

@@ -7,7 +7,7 @@
 #include "sdl_context.h"
 #include "draw.h"
 
-void label_draw(SDL_Context *context, char *text, long long x, long long y)
+void draw_label(SDL_Context *context, char *text, long long x, long long y)
 {
   SDL_Color white = { 255, 255, 255 };
   int texture_width = 0;
@@ -42,7 +42,7 @@ void label_draw(SDL_Context *context, char *text, long long x, long long y)
 }
 
 
-void label_sm_draw(SDL_Context *context, char *text, long long x, long long y)
+void draw_label_sm(SDL_Context *context, char *text, long long x, long long y)
 {
   SDL_Color white = { 255, 255, 255 };
   int texture_width = 0;
@@ -76,16 +76,16 @@ void label_sm_draw(SDL_Context *context, char *text, long long x, long long y)
   SDL_DestroyTexture(context->texture);
 }
 
-void title_draw(SDL_Context * context, ADR_Game * game)
+void draw_title(SDL_Context * context, ADR_Game * game)
 {
   long long h_x, h_y, h_w, h_h = 0;
   SEND(point, game->layout, title_location, game->mrb);
   long long t_x = mrb_fixnum(mrb_ary_entry(point, 0));
   long long t_y = mrb_fixnum(mrb_ary_entry(point, 1));
-  label_draw(context, "a dark room", t_x, t_y);
+  draw_label(context, "a dark room", t_x, t_y);
 }
 
-void history_draw(SDL_Context * context, ADR_Game * game)
+void draw_history(SDL_Context * context, ADR_Game * game)
 {
   long long h_x, h_y, h_w, h_h = 0;
   SEND(history_border, game->layout, column_1_frame, game->mrb);
@@ -93,17 +93,17 @@ void history_draw(SDL_Context * context, ADR_Game * game)
   h_y = mrb_fixnum(mrb_ary_entry(history_border, 1));
   h_w = mrb_fixnum(mrb_ary_entry(history_border, 2));
   h_h = mrb_fixnum(mrb_ary_entry(history_border, 3));
-  border(context, h_x, h_y, h_w, h_h);
+  draw_border(context, h_x, h_y, h_w, h_h);
 
-  label_sm_draw(context, "awake. head throbbing.", 60, 60);
-  label_sm_draw(context, "vision blurry. the", 60, 75);
-  label_sm_draw(context, "voices say to survive.", 60, 90);
+  draw_label_sm(context, "awake. head throbbing.", 60, 60);
+  draw_label_sm(context, "vision blurry. the", 60, 75);
+  draw_label_sm(context, "voices say to survive.", 60, 90);
 
-  label_sm_draw(context, "the fire is dead.", 60, 130);
-  label_sm_draw(context, "the room is cold.", 60, 170);
+  draw_label_sm(context, "the fire is dead.", 60, 130);
+  draw_label_sm(context, "the room is cold.", 60, 170);
 }
 
-void supplies_draw(SDL_Context * context, ADR_Game * game)
+void draw_supplies(SDL_Context * context, ADR_Game * game)
 {
   long long h_x, h_y, h_w, h_h = 0;
   SEND(supply_border, game->layout, column_3_frame, game->mrb);
@@ -111,12 +111,12 @@ void supplies_draw(SDL_Context * context, ADR_Game * game)
   h_y = mrb_fixnum(mrb_ary_entry(supply_border, 1));
   h_w = mrb_fixnum(mrb_ary_entry(supply_border, 2));
   h_h = mrb_fixnum(mrb_ary_entry(supply_border, 3));
-  border(context, h_x, h_y, h_w, h_h);
+  draw_border(context, h_x, h_y, h_w, h_h);
 
-  label_sm_draw(context, "rusty knife:         1", 980, 60);
+  draw_label_sm(context, "rusty knife:         1", 980, 60);
 }
 
-void room_draw(SDL_Context * context, ADR_Game * game)
+void draw_room(SDL_Context * context, ADR_Game * game)
 {
   /* SEND(room_border, game->layout, column_2_frame, game->mrb); */
   /* h_x = mrb_fixnum(mrb_ary_entry(room_border, 0)); */
@@ -125,12 +125,12 @@ void room_draw(SDL_Context * context, ADR_Game * game)
   /* h_h = mrb_fixnum(mrb_ary_entry(room_border, 3)); */
   /* border(context, h_x, h_y, h_w, h_h); */
 
-  title_draw(context, game);
-  history_draw(context, game);
-  supplies_draw(context, game);
+  draw_title(context, game);
+  draw_history(context, game);
+  draw_supplies(context, game);
 }
 
-void border(SDL_Context *context, int x, int y, int width, int height)
+void draw_border(SDL_Context *context, int x, int y, int width, int height)
 {
   SDL_Rect b = { x, y, width, height };
   SDL_SetRenderDrawColor(context->renderer, 255, 255, 255, 255);
